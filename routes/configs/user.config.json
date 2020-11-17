@@ -1,0 +1,21 @@
+{
+    "name":"users",
+    "path":"users.controller.js",
+    "controllers":[
+        {
+            "path":"/",
+            "function":"index",
+            "authRequired":0
+        },
+        {
+            "path":"/login",
+            "function":"login",
+            "authRequired":0,
+            "requireFields":["username","password"]
+        }
+    ],
+    "middleware":[
+        "permission", 
+        "checkdata"
+    ]
+}

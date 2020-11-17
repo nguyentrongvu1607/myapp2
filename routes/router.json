@@ -1,0 +1,17 @@
+{
+    "routers": [
+        {
+            "name": "index",
+            "pathToFile": "./routes/index",
+            "path": "/",
+            "description": ""
+        },
+        {
+            "name": "users",
+            "pathToFile": "./routes/users",
+            "path": "/users",
+            "description": "",
+            "configFile": "user.config.json"
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+{
+    "domain":"kyniema4.hopto.org",
+    "port":3010,
+    "uploadsFolderName":"uploads/",
+    "adminUploads":"admin_uploads/",
+    "debugName":"khachsan",
+    "secretKey":"khachsan99@@"
+}
