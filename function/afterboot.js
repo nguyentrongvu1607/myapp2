@@ -1,11 +1,9 @@
 
 var UserModel = require('../database/User')
-var SettingModel = require('../database/Setting')
-var language = require('../database/Unit').language
 var Utility = require('../utility');
 async function initDefaultValues(){
     initUser();
-    initSetting();
+    // initSetting();
 }
 
 function initUser(){
@@ -19,23 +17,6 @@ function initUser(){
         
     }).catch(e => {
     });
-}
-
-async function initSetting(){
-    var arrKeyLanguage = Object.keys(language);
-    arrKeyLanguage.forEach(async lang=>{
-        var newLangSetting = {
-            key: 'setting_'+lang,
-            displayName:'enable language ' + lang,
-            value: '1',
-            description: 'Ngôn ngữ ' + lang + ' có thể cho user bắt đầu học chưa',
-            collapseKey:'enable_language'
-        }
-        var oldSetting = await SettingModel.findOne({key:newLangSetting.key})
-        if(!oldSetting){
-            SettingModel.createSetting(newLangSetting);
-        }
-    })
 }
 
 function handleTickTimeout(){

@@ -5,7 +5,7 @@
     "port": 27017,
     "username": "",
     "password": "",
-    "database": "topkiddo",
+    "database": "mydb",
     "modelList": [
         {
             "name": "role",

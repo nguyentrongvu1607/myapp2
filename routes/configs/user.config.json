@@ -12,6 +12,28 @@
             "function":"login",
             "authRequired":0,
             "requireFields":["username","password"]
+        },
+        {
+            "path":"/create_event",
+            "function":"createEvent",
+            "authRequired":1
+        },
+        {
+            "path":"/update_event",
+            "function":"updateEvent",
+            "authRequired":1,
+            "requireFields":["updateInfo"]
+        },
+        {
+            "path":"/delete_event",
+            "function":"deleteEvent",
+            "authRequired":1,
+            "requireFields":["eventId"]
+        },
+        {
+            "path":"/get_list_event",
+            "function":"getListEvent",
+            "authRequired":1
         }
     ],
     "middleware":[

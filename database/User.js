@@ -11,41 +11,6 @@ const jwt = require('jsonwebtoken');
 const __ = require('i18n').__;
 const imgControl = require('../utils/image.util')
 
-var LocationSchema = {
-    code: String,
-    city: String,
-    country: String,
-    lat: Number,
-    lng: Number
-}
-
-var oldPasswordSchema = {
-    password: String,
-    timeChange: { type: Date, default: Date.now }
-}
-
-var dataHistory = {
-    autoNextContent: Boolean,
-    currentLesson: String,
-    isLearned: String,
-    isLearnedUnit: String,
-    preUnit: String,
-    timeFlash: Number,
-    unitLanguage: Number,
-    preLesson: String,
-    preLessonId: String,
-    currentUnit: String,
-    versionUpdate: Number,
-}
-
-var childData = {
-    childName:String,
-    childBirthDate:Date,
-    childGender:{type: Number, default:0},
-    avatarChild:{type: String, default:"../../assets/image/PROFILE/avt-1.svg"},
-    historyLearned: dataHistory
-}
-
 var UserSchema = new Schema({
     facebookId: { type: Number },
     facebookName: { type: String },
@@ -63,21 +28,14 @@ var UserSchema = new Schema({
         trim: true
     },
     password: { type: String },
-    pwdForgot: { type: String },
-    oldPassword: [oldPasswordSchema],
     avatar: { type: String },
-    profilePicture: [String],
     about: { type: String, default: '' },
     phoneNumber: { type: String },
     age: Number,
-    location: LocationSchema,
     isActive: Number,
     status: { type: String },
-    isUpdateFirstTimeProfile: { type: Boolean, default: true },
     role: { type: Number, default: 2 },
     expiredAt: { type: Date, default: null },
-    balance: { type: Number, default: 0 },
-    listChild: [ childData ]
 });
 
 UserSchema.virtual('noNeedOldPwd').get(() => {
@@ -86,7 +44,7 @@ UserSchema.virtual('noNeedOldPwd').get(() => {
 var mongoosePlugin = require('../utils/mongoose.util')
 UserSchema.plugin(mongoosePlugin);
 
-var PublicFields = ['username', 'avatarChild', 'listChild', 'childName', 'fullName', 'childGender', 'childBirthDate','facebookId', 'facebookName', 'firstName', 'lastName', 'birthDate', 'registerDate', 'gender', 'email', 'avatar', 'profilePicture', 'about', 'phoneNumber', 'age', 'isActive', 'role', 'status' , 'expiredAt'];
+var PublicFields = ['username', 'fullName', 'facebookId', 'facebookName', 'firstName', 'lastName', 'birthDate', 'registerDate', 'gender', 'email', 'avatar', 'about', 'phoneNumber', 'age', 'isActive', 'role', 'status' , 'expiredAt'];
 var UserRole = {
     Super_Admin: 999,
     Admin: 998,
@@ -145,26 +103,6 @@ class UserModel extends mongoose.Model {
         }).asCallback(callback);
     }
 
-    static createUserWithGoole(info, callback) {
-        if (!info || !info.googleId || !info.email || !info.lastName || !info.firstName) return Promise.reject(ErrorCode.MissingParams(info)).asCallback(callback);
-        if (!info.email || !/^([\w-\.]+@([\w-]+\.)+[\w-]{2,})?$/.test(info.email)) {
-            return Promise.reject(ErrorCode.InvalidEmail).asCallback(callback);
-        }
-        delete info.username;
-        return UserModel.findOne({ googleId: info.googleId }).then(user => {
-            if (user == null) {
-                return UserModel.create(info);
-            } else {
-                if (user.role == UserRole.Banned) return Promise.reject(ErrorCode.UserBanned);
-                return user;
-            }
-        }).asCallback(callback);
-    }
-
-    static getUserInfo(id, callback) {
-        return UserModel.findById(id, PublicFields, callback);
-    }
-
     static getUserListByCondition(data, callback) {
         let options = {};
         options['sort'] = data.sort || { registerDate: -1 };
@@ -206,15 +144,6 @@ class UserModel extends mongoose.Model {
         return UserModel.paginate(filter, options, callback);
     }
 
-    static getUserInfoByList(userIds, callback) {
-        return UserModel.find({ _id: { $in: userIds } }, PublicFields, callback);
-    }
-
-
-    static updateUserInfoBySelf(info, callback) {
-        return this.updateUserInfo(info, callback);
-    }
-
     static async updateUserInfo(newInfo, callback) {
         if (!newInfo || !newInfo._id) return Promise.reject(ErrorCode.MissingParams(newInfo)).asCallback(callback);
         var roleChanged = false;
@@ -247,106 +176,6 @@ class UserModel extends mongoose.Model {
         // }
     }
 
-    static changePassword(userId, passInfo, callback) {
-        // if (!passInfo.password_old) return Promise.reject(ErrorCode.PasswordIncorrect).asCallback(callback);
-        if (!passInfo.password_new) return Promise.reject(ErrorCode.PasswordNewMissing).asCallback(callback);
-
-        return UserModel.findById(userId).then(user => {
-            if (!user) return Promise.reject(ErrorCode.UserNotFound);
-            if (user.noNeedOldPwd) {
-                user.password = Utility.createPassword(passInfo.password_new);
-            } else {
-                if (!passInfo.password_old) return Promise.reject(ErrorCode.PasswordIncorrect).asCallback(callback);
-                passInfo.password_old = Utility.createPassword(passInfo.password_old);
-                if (passInfo.password_old != user.password) {
-                    return Promise.reject(ErrorCode.PasswordIncorrect);
-                }
-                user.oldPassword.push({ password: passInfo.password_old })
-            }
-            return user.save();
-        }).asCallback(callback);
-    }
-
-    static checkPermissionEvent(userId, ownerId, callback) {
-        debug('canCreatedEvent', 'check permission isOwner ', userId, ownerId)
-        if (ownerId == userId) {
-            return UserModel.isObjectId(ownerId).then(valid => {
-                if (valid) {
-                    return UserModel.findById(ownerId).then(user => {
-                        debug('canCreatedEvent', user);
-                        if (user && user.role >= UserRole.Merchant) return Promise.resolve(true);
-                        return Promise.resolve(false);
-                    })
-                }
-
-                return Promise.reject(ErrorCode.InvalidId);
-            }).asCallback(callback);
-        } else {
-            return UserModel.isObjectId(userId).then(valid => {
-                if (valid) {
-                    return UserModel.findById(userId).then(user => {
-                        if (user && user.role > UserRole.Merchant) return Promise.resolve(true);
-                        return Promise.resolve(false);
-                    })
-                }
-
-                return Promise.reject(ErrorCode.InvalidId);
-            }).asCallback(callback);
-        }
-    }
-
-    static deleteUser(userId, callback) {
-        return UserModel.findByIdAndUpdate(userId, { $set: { role: UserRole.Banned } }, callback);
-    }
-
-    static changePasswordReset(token, newPwd, callback) {
-        return new Promise((resolve, reject) => {
-            var payload = jwt.verify(token, Constant.SecrectKey);
-            if (!payload) return reject(ErrorCode.ForgotPwdTokenInvalid);
-            if (payload.time < new Date().getTime()) return reject(ErrorCode.ForgotPwdTokenExpired);
-            UserModel.findById(payload.user).then(user => {
-                if (user && user.pwdForgot == token) return resolve(user);
-                reject(ErrorCode.ForgotPwdHadChanged)
-            }).catch(err => {
-                reject(err);
-            })
-        }).then(user => {
-            user.oldPassword.push({ password: user.password })
-            user.password = Utility.createPassword(newPwd);
-            user.pwdForgot = null;
-            return user.save();
-        }).asCallback(callback);
-    }
-
-    static checkTokenChangePwd(token, callback) {
-        return new Promise((resolve, reject) => {
-            var payload = jwt.verify(token, Constant.SecrectKey);
-            if (!payload) return reject(ErrorCode.ForgotPwdTokenInvalid);
-            if (payload.time < new Date().getTime()) return reject(ErrorCode.ForgotPwdTokenExpired);
-            UserModel.findById(payload.user).then(user => {
-                if (user && user.pwdForgot == token) return resolve(user);
-                reject(ErrorCode.ForgotPwdHadChanged)
-            }).catch(err => {
-                reject(err);
-            })
-        }).asCallback(callback);
-    }
-
-    static submitPayment(info, callback) {
-        return this.findByIdAndUpdate(info.user, { $set: { role: UserRole.PremiumUser } }, { new: true }, callback)
-    }
-
-    static convertMoneyToDays(money) {
-        if(money == 299*1000){
-            return 6*30
-        }else if(money == 599*1000 ){
-            return 12*30
-        }else if(money == 2999*1000){
-            return 50*12*30
-        }else{
-            return 0;
-        }
-    }
 }
 
 mongoose.model(UserModel, UserSchema);

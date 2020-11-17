@@ -111,19 +111,6 @@ class LoginModel extends Model {
     }).asCallback(callback);
   }
 
-  static checkFbToken(token, callback) {
-    LoginModel.findOne({ accessToken: token }).populate({ path: 'user', model: UserModel.modelName, select: UserModel.getPublicSelect() }).exec(function (err, login) {
-      if (err) {
-        return callback(0, err)
-      }
-      if (login) {
-        callback(1, login)
-      } else {
-        callback(0, 'not found')
-      }
-    })
-  }
-
   updateLoginTime() {
     this.lastestTimeRequest = new Date()
     this.save(function (err) { debug(err) })
@@ -136,19 +123,6 @@ class LoginModel extends Model {
     return moment().diff(dateFrom, 'years')
   }
 
-  static getUserFcmToken(arrayUserId, callback) {
-    LoginModel.find({ isExpired: 0, user: { $in: arrayUserId } }).lean()
-      .distinct('fcmToken').exec(function (err, fcmTokenArray) {
-        if (err) {
-          return callback(err);
-        }
-        callback(0, fcmTokenArray)
-      })
-  }
-
-  static async getFcmTokenFromUserIds(userIds){
-    return LoginModel.find({user:{$in:userIds}}).distinct('fcmToken')
-  }
 }
 mongoose.model(LoginModel, LoginSchema)
 module.exports = LoginModel;
