@@ -5,5 +5,3 @@ script:
 - echo '*** Starting build ***'
 - echo 'install dependencies'
 - npm install
-- echo 'Running test'
-- npm test
